@@ -8,7 +8,6 @@ import asyncio
 import json
 import os
 import re
-from html import unescape
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -77,6 +76,8 @@ def _url(value):
     value = (value or "").strip()
     if not value:
         return ""
+    if "://" in value and not re.match(r"^https?://", value, re.I):
+        return ""
     if not re.match(r"^https?://", value, re.I):
         value = "https://" + value
     parts = urlparse(value)
@@ -116,7 +117,7 @@ async def audit_lead(lead):
         result["audit_status"] = "no_website_listed"
         return result
     try:
-        async with public_http_client(timeout=httpx.Timeout(15.0), follow_redirects=True) as client:
+        async with public_http_client(timeout=httpx.Timeout(15.0)) as client:
             async with client.stream("GET", url, headers={"User-Agent": "Sellbird-OpportunityAudit/1.0"}) as response:
                 response.raise_for_status()
                 if "text/html" not in response.headers.get("content-type", ""):
